@@ -1,6 +1,7 @@
 // Should be sorted ascending by timestamp
-var DATA_SHEET = "Test Data 2";
-var WRITE_SHEET = "Test Actual 2";
+var DATA_SHEET = "Form Responses 1";
+var WRITE_SHEET_1 = "Session 1";
+var WRITE_SHEET_2 = "Session 2";
 var WORKSHOPS = {
   "Prayer - Jon Lo": 20,
   "Why Four Gospels? - Jason Lee": 20,
@@ -21,15 +22,19 @@ function assignWorkshops() {
   let app = SpreadsheetApp.getActive();
   let inputSheet = app.getSheetByName(DATA_SHEET);
   let inputRange = inputSheet.getDataRange();
-
   let formEntries = parseEntries(inputRange.getValues());
-  let workshopAssignments = createAssignmentsMap();
 
+  let workshopAssignments1 = createAssignmentsMap();
   for (let e of formEntries) {
-    assignKid(e, workshopAssignments);
+    assignKid(e, workshopAssignments1);
   }
+  writeAssignments(workshopAssignments1, app.getSheetByName(WRITE_SHEET_1));
 
-  writeAssignments(workshopAssignments, app.getSheetByName(WRITE_SHEET));
+  let workshopAssignments2 = createAssignmentsMap();
+  for (let e of formEntries) {
+    assignKid(e, workshopAssignments2);
+  }
+  writeAssignments(workshopAssignments2, app.getSheetByName(WRITE_SHEET_2));
 }
 
 /** Parse input sheet's values into FormEntries. */
@@ -52,13 +57,20 @@ function createAssignmentsMap() {
   return assignments;
 }
 
-/** Assign a kid to a workshop. */
+/** Assign a kid to a workshop and remove that choice from their entry. */
 function assignKid(entry, assignments) {
-  for (let workshopChoice of entry.choices) {
+  for (let i in entry.choices) {
+    let workshopChoice = entry.choices[i];
+
     if (isFull(workshopChoice, assignments)) {
       continue;
     }
+
     assignments[workshopChoice].push(`${entry.name} (${entry.smallGroup})`);
+
+    // Remove choice from entry.
+    entry.choices.splice(i, 1);
+
     return;
   }
   assignments["UNABLE TO ASSIGN"].push(`${entry.name} (${entry.smallGroup})`);
@@ -83,6 +95,7 @@ function writeAssignments(assignments, outputSheet) {
     cells.push(row);
   }
 
+  // Letter G is because there are 7 choices.
   let outputRange = outputSheet.getRange(`A1:G${cells.length}`);
   outputRange.setValues(cells);
 }
